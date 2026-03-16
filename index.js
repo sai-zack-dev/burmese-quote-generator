@@ -2,6 +2,7 @@
 
 import prompts from "prompts";
 import fs from "fs";
+import ora from "ora";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const emotions = {
@@ -10,10 +11,12 @@ const emotions = {
   love: "Love",
   anger: "Anger",
   fear: "Fear",
-  surprise: "Surprise"
+  surprise: "Surprise",
 };
 
 async function main() {
+  let spinner;
+
   try {
     console.log("=== Burmese Quote Generator (Gemini) ===");
 
@@ -30,17 +33,16 @@ async function main() {
 
     // CLI MODE
     if (emotionArg && limitArg) {
-
       const keyPrompt = await prompts({
         type: "password",
         name: "value",
-        message: "Enter Gemini API Key"
+        message: "Enter Gemini API Key",
       });
 
       apiKey = keyPrompt.value;
 
       if (!apiKey) {
-        console.log("❌ API Key is required.");
+        console.log("[!] API Key is required.");
         process.exit(1);
       }
 
@@ -48,26 +50,24 @@ async function main() {
       limit = parseInt(limitArg);
 
       if (!emotionName) {
-        console.log("❌ Invalid emotion.");
+        console.log("[!] Invalid emotion.");
         console.log("Valid options: sadness, joy, love, anger, fear, surprise");
         process.exit(1);
       }
 
       if (isNaN(limit) || limit <= 0) {
-        console.log("❌ Quote limit must be a positive number.");
+        console.log("[!] Quote limit must be a positive number.");
         process.exit(1);
       }
 
       format = csvFlag ? "csv" : "txt";
-
     } else {
-
       // INTERACTIVE MODE
       const response = await prompts([
         {
           type: "password",
           name: "apiKey",
-          message: "Enter Gemini API Key"
+          message: "Enter Gemini API Key",
         },
         {
           type: "select",
@@ -79,13 +79,13 @@ async function main() {
             { title: "Love", value: "love" },
             { title: "Anger", value: "anger" },
             { title: "Fear", value: "fear" },
-            { title: "Surprise", value: "surprise" }
-          ]
+            { title: "Surprise", value: "surprise" },
+          ],
         },
         {
           type: "number",
           name: "limit",
-          message: "How many quotes?"
+          message: "How many quotes?",
         },
         {
           type: "select",
@@ -93,9 +93,9 @@ async function main() {
           message: "Output format",
           choices: [
             { title: "TXT", value: "txt" },
-            { title: "CSV", value: "csv" }
-          ]
-        }
+            { title: "CSV", value: "csv" },
+          ],
+        },
       ]);
 
       apiKey = response.apiKey;
@@ -104,17 +104,17 @@ async function main() {
       format = response.format;
 
       if (!apiKey) {
-        console.log("❌ API Key is required.");
+        console.log("[!] API Key is required.");
         process.exit(1);
       }
     }
 
-    console.log(`Generating ${limit} ${emotionName} quotes...`);
+    spinner = ora(`Generating ${limit} ${emotionName} quotes...`).start();
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
-      model: "models/gemini-2.5-flash"
+      model: "models/gemini-2.5-flash",
     });
 
     const prompt = `
@@ -131,20 +131,22 @@ Rules:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
+    spinner.succeed("Quotes generated successfully!");
+
     const quotes = text
       .split("\n")
-      .map(q => q.trim())
-      .filter(q => q.length > 0);
+      .map((q) => q.trim())
+      .filter((q) => q.length > 0);
 
     if (quotes.length === 0) {
-      console.log("❌ No quotes were generated. Try again.");
+      console.log("[!] No quotes were generated. Try again.");
       process.exit(1);
     }
 
     let output;
 
     if (format === "csv") {
-      output = "quote\n" + quotes.map(q => `"${q}"`).join("\n");
+      output = "quote\n" + quotes.map((q) => `"${q}"`).join("\n");
     } else {
       output = quotes.join("\n");
     }
@@ -153,33 +155,27 @@ Rules:
 
     fs.writeFileSync(filename, output);
 
-    console.log(`✅ Quotes generated successfully!`);
-    console.log(`📁 Saved file: ${filename}`);
-
+    console.log(`Saved file: ${filename}`);
   } catch (error) {
+    if (spinner) spinner.fail("Generation failed.");
 
-    // Handle Gemini API errors
-    if (error.message.includes("API key")) {
-      console.log("❌ Invalid Gemini API key.");
-      return;
+    const status = error?.status || error?.response?.status;
+
+    if (status === 401) {
+      console.log("[!] Invalid Gemini API key.");
+    } else if (status === 404) {
+      console.log("[!] Gemini model not available.");
+    } else if (status === 429) {
+      console.log("[!] Too many requests or quota exceeded.");
+    } else if (error.message?.toLowerCase().includes("quota")) {
+      console.log("[!] Gemini API quota exceeded. Try again later.");
+    } else if (error.code === "ENOTFOUND") {
+      console.log("[!] Network error. Please check your internet connection.");
+    } else {
+      console.log("[!] Unexpected error occurred.");
     }
 
-    if (error.message.includes("quota")) {
-      console.log("❌ Gemini API quota exceeded. Try again later.");
-      return;
-    }
-
-    if (error.message.includes("429")) {
-      console.log("❌ Too many requests. Please try again later.");
-      return;
-    }
-
-    if (error.message.includes("404")) {
-      console.log("❌ Gemini model not available.");
-      return;
-    }
-
-    console.log("❌ Something went wrong while generating quotes.");
+    process.exit(1);
   }
 }
 

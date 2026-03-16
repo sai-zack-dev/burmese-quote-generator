@@ -7,11 +7,18 @@
   "bin": {
     "burmese-quote-generator": "./index.js"
   },
-  "keywords": ["gemini", "burmese", "quotes", "cli", "dataset"],
+  "keywords": [
+    "gemini",
+    "burmese",
+    "quotes",
+    "cli",
+    "dataset"
+  ],
   "author": "Sai Zack",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "ora": "^9.3.0",
     "prompts": "^2.4.2"
   }
 }
