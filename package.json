@@ -1,0 +1,17 @@
+{
+  "name": "burmese-quote-generator",
+  "version": "1.0.0",
+  "description": "CLI tool to generate Burmese emotion quotes using Gemini API",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "burmese-quote-generator": "./index.js"
+  },
+  "keywords": ["gemini", "burmese", "quotes", "cli", "dataset"],
+  "author": "Sai Zack",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "prompts": "^2.4.2"
+  }
+}
