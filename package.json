@@ -1,6 +1,6 @@
 {
   "name": "burmese-quote-generator",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI tool to generate Burmese emotion quotes using Gemini API",
   "main": "index.js",
   "type": "module",
