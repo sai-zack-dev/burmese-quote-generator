@@ -118,14 +118,14 @@ async function main() {
     });
 
     const prompt = `
-Generate ${limit} short Burmese quotes that express the emotion "${emotionName}".
-
+Generate ${limit} Burmese quotes that express the emotion "${emotionName}".
 Rules:
 - Burmese language only
 - One quote per line
 - No numbering
 - No explanation
-- Each quote maximum 20 words
+- No emojis
+- No Duplicate quotes
 `;
 
     const result = await model.generateContent(prompt);
